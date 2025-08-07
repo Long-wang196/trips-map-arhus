@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>奥胡斯交互旅行地图 (自定义图标版)</title>
+    <title>奥胡斯交互旅行地图 (显示名称版)</title>
     
     <!-- 引入 Leaflet 的 CSS 文件 -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -54,6 +54,18 @@
         .custom-popup p {
             margin: 0;
         }
+
+        /* !! 新增 !! 自定义Tooltip样式，使其无背景和边框 */
+        .custom-tooltip {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            font-weight: bold;
+            font-size: 12px;
+            color: #000;
+            /* 为文字添加轻微的白色描边，使其在复杂背景下更清晰 */
+            text-shadow: 1px 1px 0px #FFF, -1px -1px 0px #FFF, 1px -1px 0px #FFF, -1px 1px 0px #FFF;
+        }
     </style>
 </head>
 <body>
@@ -71,41 +83,44 @@
 
         // 3. 按正确顺序排列的旅行地点数据
         const locations = [
-            { name: '1. 冰山住宅 (The Iceberg)', coords: [56.165764, 10.232166], desc: 'L型的外形像冰山，现代建筑与几何图形临海而立。' },
-            { name: '2. 无限桥 (The Infinite Bridge)', coords: [56.15705829789713, 10.213914950173526], desc: '充满创意地展览空间，一个延伸至海上的圆形步行桥，提供360度海景。' },
+            { name: '1. 冰山住宅', coords: [56.165764, 10.232166], desc: 'L型的外形像冰山，现代建筑与几何图形临海而立。' },
+            { name: '2. 无限桥', coords: [56.156932419273666, 10.213960155520752], desc: '充满创意地展览空间，一个延伸至海上的圆形步行桥，提供360度海景。' },
             { name: '3. Salling Rooftop', coords: [56.1558, 10.2075], desc: '市中心最棒观景台之一，被旅游杂志Big 7 Travel评为2022欧洲最佳屋顶酒吧。' },
-            { name: '4. 奥胡斯主教堂 (Aarhus Domkirke)', coords: [56.156635, 10.210365], desc: '地标，丹麦第二大教堂，彩绘玻璃很棒，登顶可俯瞰喔。' },
-            { name: '5. 风车公园 (Mølleparken)', coords: [56.156000, 10.200333], desc: '城市中心的公园，靠近ARoS艺术博物馆。' },
-            { name: '6. 老城博物馆 (Den Gamle By)', coords: [56.1585, 10.1910], desc: '展现城区建筑文化，世界第一家有关城市历史和民俗的露天博物馆。' },
+            { name: '4. 奥胡斯主教堂', coords: [56.156635, 10.210365], desc: '地标，丹麦第二大教堂，彩绘玻璃很棒，登顶可俯瞰喔。' },
+            { name: '5. 风车公园', coords: [56.156000, 10.200333], desc: '城市中心的公园，靠近ARoS艺术博物馆。' },
+            { name: '6. 老城博物馆', coords: [56.1585, 10.1910], desc: '展现城区建筑文化，世界第一家有关城市历史和民俗的露天博物馆。' },
             { name: '7. ARoS艺术博物馆', coords: [56.153919, 10.199548], desc: '必去，当地最有名艺术博物馆，屋顶彩虹通道360度全景视角Your Rainbow Panorama。' },
-            { name: '8. 奥胡斯音乐厅 (Aarhus Koncerthus)', coords: [56.152201, 10.199171], desc: '斯堪的纳维亚半岛最大的音乐厅之一。' },
-            { name: '9. 市政厅 (Rådhus Arhus)', coords: [56.153056, 10.203333], desc: '古典与现代交融的建筑美学。' },
-            { name: '10. 蒂芙利游乐场 (Tivoli Friheden)', coords: [56.137132, 10.195987], desc: '位于市中心南部的游乐园。' },
-            { name: '11. 鹿园 (The Deer Park)', coords: [56.121815, 10.221511], desc: '有鹿群可喂胡萝卜。' },
+            { name: '8. 奥胡斯音乐厅', coords: [56.152201, 10.199171], desc: '斯堪的纳维亚半岛最大的音乐厅之一。' },
+            { name: '9. 市政厅', coords: [56.153056, 10.203333], desc: '古典与现代交融的建筑美学。' },
+            { name: '10. 蒂芙利游乐场', coords: [56.137132, 10.195987], desc: '位于市中心南部的游乐园。' },
+            { name: '11. 鹿园', coords: [56.121815, 10.221511], desc: '有鹿群可喂胡萝卜。' },
             { name: '12. Ballehage Beach', coords: [56.1210, 10.2250], desc: '丹麦最古老海水浴场之一。' }
         ];
 
-        // 4. 添加标记
+        // 4. 添加标记并直接显示名称
         locations.forEach(loc => {
             const popupContent = `<h3>${loc.name}</h3><p>${loc.desc}</p>`;
             const customPopupClass = { 'className': 'custom-popup' };
+            
             L.marker(loc.coords)
              .addTo(map)
-             .bindPopup(popupContent, customPopupClass);
+             .bindPopup(popupContent, customPopupClass)
+             // !! 已修改 !! 绑定一个永久可见的Tooltip来显示名称
+             .bindTooltip(loc.name, {
+                permanent: true,          // 设置为永久可见
+                direction: 'top',         // 在图标上方显示
+                offset: [0, -10],         // 向上偏移10像素，避免与图标重叠
+                className: 'custom-tooltip' // 应用我们自定义的CSS样式
+             });
         });
 
-        // 5. 使用曲线和箭头绘制路线
+        // 5. 使用曲线和箭头绘制路线 (无改动)
         const routeLayer = L.featureGroup().addTo(map);
         for (let i = 0; i < locations.length - 1; i++) {
             const startPoint = locations[i].coords;
             const endPoint = locations[i + 1].coords;
             const pathData = ['M', startPoint, 'Q', getControlPoint(startPoint, endPoint), endPoint];
-            const curve = L.curve(pathData, {
-                color: 'blue',
-                weight: 3,
-                opacity: 0.7,
-                dashArray: '5, 10'
-            });
+            const curve = L.curve(pathData, { color: 'blue', weight: 3, opacity: 0.7, dashArray: '5, 10' });
             routeLayer.addLayer(curve);
             const arrowDecorator = L.polylineDecorator(curve, {
                 patterns: [ {
@@ -125,26 +140,18 @@
         }
         map.fitBounds(routeLayer.getBounds().pad(0.1));
 
-        // 6. 实现实时定位功能
+        // 6. 实现实时定位功能 (无改动)
         let userMarker, userCircle;
-
-        // !! 新增 !! 创建一个绿色的自定义图标
         const greenIcon = new L.Icon({
             iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
             shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-            iconSize: [25, 41],
-            iconAnchor: [12, 41],
-            popupAnchor: [1, -34],
-            shadowSize: [41, 41]
+            iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
         });
-
         function onLocationFound(e) {
             const radius = e.accuracy / 2;
             const latlng = e.latlng;
             if (!userMarker) {
-                // !! 已修改 !! 创建标记时使用上面定义的 greenIcon
-                userMarker = L.marker(latlng, { icon: greenIcon }).addTo(map)
-                    .bindPopup(`你在这里 (精度: ${radius.toFixed(0)} 米)`).openPopup();
+                userMarker = L.marker(latlng, { icon: greenIcon }).addTo(map).bindPopup(`你在这里 (精度: ${radius.toFixed(0)} 米)`).openPopup();
                 userCircle = L.circle(latlng, radius).addTo(map);
             } else {
                 userMarker.setLatLng(latlng).setPopupContent(`你在这里 (精度: ${radius.toFixed(0)} 米)`);
@@ -159,5 +166,4 @@
         map.locate({ watch: true, setView: false, enableHighAccuracy: true });
     </script>
 </body>
-
 </html>
