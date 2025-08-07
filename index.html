@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>奥胡斯交互旅行地图 (曲线修正版)</title>
+    <title>奥胡斯交互旅行地图 (自定义图标版)</title>
     
     <!-- 引入 Leaflet 的 CSS 文件 -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -15,8 +15,11 @@
      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
      crossorigin=""></script>
 
-    <!-- !! 已修正 !! 更换为可靠的插件链接，确保MIME类型正确 -->
+    <!-- 引入曲线插件 -->
     <script src="https://unpkg.com/leaflet-curve/leaflet.curve.js"></script>
+
+    <!-- 引入 PolylineDecorator 插件，用于绘制箭头 -->
+    <script src="https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"></script>
 
     <style>
         html, body {
@@ -69,7 +72,7 @@
         // 3. 按正确顺序排列的旅行地点数据
         const locations = [
             { name: '1. 冰山住宅 (The Iceberg)', coords: [56.165764, 10.232166], desc: 'L型的外形像冰山，现代建筑与几何图形临海而立。' },
-            { name: '2. 无限桥 (The Infinite Bridge)', coords: [56.157083473572335, 10.214050566215203], desc: '充满创意地展览空间，一个延伸至海上的圆形步行桥，提供360度海景。' },
+            { name: '2. 无限桥 (The Infinite Bridge)', coords: [56.124866, 10.218979], desc: '充满创意地展览空间，一个延伸至海上的圆形步行桥，提供360度海景。' },
             { name: '3. Salling Rooftop', coords: [56.1558, 10.2075], desc: '市中心最棒观景台之一，被旅游杂志Big 7 Travel评为2022欧洲最佳屋顶酒吧。' },
             { name: '4. 奥胡斯主教堂 (Aarhus Domkirke)', coords: [56.156635, 10.210365], desc: '地标，丹麦第二大教堂，彩绘玻璃很棒，登顶可俯瞰喔。' },
             { name: '5. 风车公园 (Mølleparken)', coords: [56.156000, 10.200333], desc: '城市中心的公园，靠近ARoS艺术博物馆。' },
@@ -91,7 +94,7 @@
              .bindPopup(popupContent, customPopupClass);
         });
 
-        // 5. 使用曲线绘制路线
+        // 5. 使用曲线和箭头绘制路线
         const routeLayer = L.featureGroup().addTo(map);
         for (let i = 0; i < locations.length - 1; i++) {
             const startPoint = locations[i].coords;
@@ -104,8 +107,14 @@
                 dashArray: '5, 10'
             });
             routeLayer.addLayer(curve);
+            const arrowDecorator = L.polylineDecorator(curve, {
+                patterns: [ {
+                    offset: '50%', repeat: 0,
+                    symbol: L.Symbol.arrowHead({ pixelSize: 15, polygon: false, pathOptions: { stroke: true, weight: 2, color: 'blue' } })
+                } ]
+            }).addTo(map);
+            routeLayer.addLayer(arrowDecorator);
         }
-
         function getControlPoint(start, end) {
             const lat1 = start[0], lng1 = start[1];
             const lat2 = end[0], lng2 = end[1];
@@ -114,16 +123,28 @@
             const controlPoint = [(lat1 + lat2) / 2 + offsetX * 0.1, (lng1 + lng2) / 2 - offsetY * 0.1];
             return controlPoint;
         }
-
         map.fitBounds(routeLayer.getBounds().pad(0.1));
 
         // 6. 实现实时定位功能
         let userMarker, userCircle;
+
+        // !! 新增 !! 创建一个绿色的自定义图标
+        const greenIcon = new L.Icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+
         function onLocationFound(e) {
             const radius = e.accuracy / 2;
             const latlng = e.latlng;
             if (!userMarker) {
-                userMarker = L.marker(latlng).addTo(map).bindPopup(`你在这里 (精度: ${radius.toFixed(0)} 米)`).openPopup();
+                // !! 已修改 !! 创建标记时使用上面定义的 greenIcon
+                userMarker = L.marker(latlng, { icon: greenIcon }).addTo(map)
+                    .bindPopup(`你在这里 (精度: ${radius.toFixed(0)} 米)`).openPopup();
                 userCircle = L.circle(latlng, radius).addTo(map);
             } else {
                 userMarker.setLatLng(latlng).setPopupContent(`你在这里 (精度: ${radius.toFixed(0)} 米)`);
